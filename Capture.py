@@ -14,12 +14,14 @@ def set_interval(func, sec):
     t.start()
     return t
 def screen_record(): 
-    printscreen =  np.array(ImageGrab.grab(bbox=(480,360,2600,1270)))
+    s_x = 316
+    s_y = 162
+    printscreen =  np.array(ImageGrab.grab(bbox=(s_x,s_y,1700,782)))
     cv2.imwrite('capture.png',cv2.cvtColor(printscreen, cv2.COLOR_BGR2RGB))
     print('cap')
 
 
-set_interval(screen_record, 2)
+set_interval(screen_record, 5)
 
 
 
