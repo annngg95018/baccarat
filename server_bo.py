@@ -22,7 +22,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 #Image detection region 
-tem = ['peace.png', 'home.png', 'client.png']
+tem = ['Peace.png', 'Home.png', 'Client.png']
 
 import random
 
@@ -103,9 +103,9 @@ def set_interval(func, sec):
 
 # Sending Info.
 def sendmeg():
-    s_x = 316
-    s_y = 162
-    printscreen =  np.array(ImageGrab.grab(bbox=(s_x,s_y,1700,782)))
+    s_x = 480
+    s_y = 360
+    printscreen =  np.array(ImageGrab.grab(bbox=(s_x,s_y,2600,1340)))
     cv2.imwrite('capture.png',cv2.cvtColor(printscreen, cv2.COLOR_BGR2RGB))
     print('cap')
 
@@ -120,6 +120,7 @@ def sendmeg():
     ww = 315
     hh = 188
     final_result = ""
+    table = 1
     for xx, yy in pos:
         img_sub = img_rgb[int(yy-10):int(yy+hh+10), int(xx-5):int(xx+ww+5)]
         game_sort = []
@@ -128,7 +129,7 @@ def sendmeg():
 
             col = (component(),component(),component())
             template = cv2.imread(t)
-            template = cv2.resize(template, (20,20))
+            template = cv2.resize(template, (18,18))
             w, h = template.shape[0:2]
 
             res = cv2.matchTemplate(img_sub,template,cv2.TM_CCOEFF_NORMED)
@@ -143,14 +144,17 @@ def sendmeg():
             for pt in loc:
 
                 cv2.rectangle(img_sub, (pt[0],pt[1]), (pt[2], pt[3]), col, 1)
-                game_sort.append([t.split('.')[0], int(int(pt[0])/15), int(int(pt[1])/15)])
+                game_sort.append([t[0], int(int(pt[0])/12), int(int(pt[1])/12)])
         game_sort = sorted(game_sort, key = lambda game_sort: (game_sort[1], game_sort[2]))
         game_sort.reverse()
         print(len(game_sort))
-        for iii in range(5):
-            final_result += game_sort[iii][0]+":"
+        final_result += "table"+str(table)+"="
+        if len(game_sort) > 4:
+            for iii in range(5):
+                final_result += game_sort[iii][0]+":"
         final_result += "\n"
-        
+        final_result += "\n"
+        table += 1
     print('---------------------------------') 
     line_bot_api.push_message( my_id, TextSendMessage(final_result))
 
