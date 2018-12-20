@@ -24,6 +24,8 @@ from matplotlib import pyplot as plt
 #Image detection region 
 tem = ['Peace.png', 'Home.png', 'Client.png']
 
+Users_id = []
+
 import random
 
 #  Felzenszwalb et al.
@@ -156,7 +158,11 @@ def sendmeg():
         final_result += "\n"
         table += 1
     print('---------------------------------') 
-    line_bot_api.push_message( my_id, TextSendMessage(final_result))
+
+    #send message
+    for i in range(len(Users_id)):
+        line_bot_api.push_message( Users_id[i], TextSendMessage(final_result))
+    
 
 
 #Line app setting
@@ -167,7 +173,7 @@ handler = WebhookHandler('e932e9253cab105336c606bf6f9fa7f6')
 my_id = "Ud3635ab30831e9f1ca5bef2d4a1e4c54"
 
 #Starting sending messages 
-set_interval(sendmeg, 10)
+#set_interval(sendmeg, 10)
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -190,9 +196,27 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
+    if event.message.text == "註冊":
+        strange_id = event.source.user_id
+        text_file = open("Users_data.txt", "r")
+
+        Users_data = text_file.read().split(',')
+        if any (strange_id in s for s in Users_data):
+            print("already register")
+            line_bot_api.reply_message(event.reply_token,TextSendMessage("重複註冊！"))
+        else:
+            print(event.source.user_id)
+            with open('Users_data.txt', 'a') as f:
+                f.write("%s\n" % strange_id)
+                f.close()
+            line_bot_api.reply_message(event.reply_token,TextSendMessage("註冊成功！"))
+
+        '''
     line_bot_api.reply_message(
         event.reply_token,
+        
         TextSendMessage("翔祐"))
+        '''
 
 
 if __name__ == "__main__":
