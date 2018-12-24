@@ -17,6 +17,7 @@ import time
 
 import threading
 
+
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
@@ -129,7 +130,7 @@ def sendmeg():
 
         for t in tem:
 
-            col = (component(),component(),component())
+            #col = (component(),component(),component())
             template = cv2.imread(t)
             template = cv2.resize(template, (18,18))
             w, h = template.shape[0:2]
@@ -145,7 +146,7 @@ def sendmeg():
             loc = non_max_suppression_slow(np.array(boundingbox), 0.5)
             for pt in loc:
 
-                cv2.rectangle(img_sub, (pt[0],pt[1]), (pt[2], pt[3]), col, 1)
+                #cv2.rectangle(img_sub, (pt[0],pt[1]), (pt[2], pt[3]), col, 1)
                 game_sort.append([t[0], int(int(pt[0])/12), int(int(pt[1])/12)])
         game_sort = sorted(game_sort, key = lambda game_sort: (game_sort[1], game_sort[2]))
         game_sort.reverse()
@@ -172,6 +173,12 @@ line_bot_api = LineBotApi('+Jgyg3wv6IdzR4KAUz9rIY81BkJV9oTBfOlZ9aYDpsNSUO7MjK9ez
 handler = WebhookHandler('e932e9253cab105336c606bf6f9fa7f6')
 my_id = "Ud3635ab30831e9f1ca5bef2d4a1e4c54"
 
+help_strings = "歡迎使用莫蒂百家樂，跟著以下步驟執行即可開啟報牌系統："
+help_strings += "\n\n1. 輸入「註冊」，完成註冊動作，並可開始報牌。"
+help_strings += "\n\n2. 輸入「套路=莊閒」，即可完成自訂套路設定動作，範例：「套路=莊閒莊閒」。（可重新設定）"
+help_strings += "\n\nPs1. 若未設定套路將採預設套路「莊閒莊閒」回報。"
+help_strings += "\n\nPs2. 若您想取消報牌，請輸入「取消」。"
+strategy_dic = {'閒':'C', '莊':'H', '和':'P'}
 #Starting sending messages 
 #set_interval(sendmeg, 10)
 
@@ -198,25 +205,70 @@ def callback():
 def handle_message(event):
     if event.message.text == "註冊":
         strange_id = event.source.user_id
-        text_file = open("Users_data.txt", "r")
-
-        Users_data = text_file.read().split(',')
-        if any (strange_id in s for s in Users_data):
+        Users_data = np.load("Database.npy")
+        if any (strange_id in s[0] for s in Users_data):
             print("already register")
             line_bot_api.reply_message(event.reply_token,TextSendMessage("重複註冊！"))
         else:
             print(event.source.user_id)
-            with open('Users_data.txt', 'a') as f:
-                f.write("%s\n" % strange_id)
-                f.close()
+            Users_data = np.append(Users_data, [[strange_id, ""]], axis=0)
+            np.save("Database.npy", Users_data)
             line_bot_api.reply_message(event.reply_token,TextSendMessage("註冊成功！"))
 
-        '''
-    line_bot_api.reply_message(
-        event.reply_token,
+    
+    elif "套路=" in event.message.text or "套路＝" in event.message.text:
+        strange_id = event.source.user_id
+        strategy = ""
+        try:
         
-        TextSendMessage("翔祐"))
-        '''
+            strategy = event.message.text.split('＝')[1]
+        
+        except:
+        
+            strategy = event.message.text.split('=')[1]
+        
+        Users_data = np.load("Database.npy")
+        
+        if any (strange_id in s[0] for s in Users_data):
+            try:
+                for i in range(len(Users_data)):
+                    if strange_id in Users_data[i][0]:
+                        cus_strategy = ""
+
+                        for key in strategy:
+                            cus_strategy += strategy_dic[key]
+                        Users_data[i][1] =  cus_strategy
+                        line_bot_api.reply_message(event.reply_token,TextSendMessage("套路設定成功！"))
+            except:
+                some_onesId = event.source.user_id
+                line_bot_api.push_message(some_onesId,TextSendMessage("請檢查是否有錯字，範例：「套路=莊閒莊閒」。"))
+
+        else:
+            print(event.source.user_id)
+            line_bot_api.reply_message(event.reply_token,TextSendMessage("欲設定請先註冊！"))
+        np.save("Database.npy", Users_data)
+
+    elif event.message.text == "取消":
+        strange_id = event.source.user_id
+        Users_data = np.load("Database.npy")
+        del_i = 0
+        if any (strange_id in s[0] for s in Users_data):
+            for i in range(len(Users_data)):
+                if strange_id in Users_data[i][0]:
+                    del_i = i
+                    break
+            if del_i != 0:
+                Users_data = np.delete(Users_data, del_i, 0)
+                np.save("Database.npy", Users_data)
+                print("delet user")
+                line_bot_api.reply_message(event.reply_token,TextSendMessage("報牌已取消！"))
+        else:
+            print("weird guy")
+            line_bot_api.reply_message(event.reply_token,TextSendMessage("您尚未註冊！"))
+    else:
+        some_onesId = event.source.user_id
+        line_bot_api.push_message(some_onesId,TextSendMessage(help_strings))
+
 
 
 if __name__ == "__main__":
