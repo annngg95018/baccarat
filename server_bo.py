@@ -109,7 +109,7 @@ def sendmeg():
     s_x = 480
     s_y = 360
     printscreen =  np.array(ImageGrab.grab(bbox=(s_x,s_y,2600,1340)))
-    cv2.imwrite('capture.png',cv2.cvtColor(printscreen, cv2.COLOR_BGR2RGB))
+    #cv2.imwrite('capture.png',cv2.cvtColor(printscreen, cv2.COLOR_BGR2RGB))
     print('cap')
 
 
@@ -124,6 +124,7 @@ def sendmeg():
     hh = 188
     final_result = ""
     table = 1
+    report = []
     for xx, yy in pos:
         img_sub = img_rgb[int(yy-10):int(yy+hh+10), int(xx-5):int(xx+ww+5)]
         game_sort = []
@@ -151,18 +152,29 @@ def sendmeg():
         game_sort = sorted(game_sort, key = lambda game_sort: (game_sort[1], game_sort[2]))
         game_sort.reverse()
         print(len(game_sort))
+        table_info = ""
         final_result += "table"+str(table)+"="
         if len(game_sort) > 4:
             for iii in range(5):
                 final_result += game_sort[iii][0]+":"
+                table_info += game_sort[iii][0]
+        
+        report.append([table, table_info[::-1]])
         final_result += "\n"
         final_result += "\n"
         table += 1
     print('---------------------------------') 
+    print(report)
 
     #send message
-    for i in range(len(Users_id)):
-        line_bot_api.push_message( Users_id[i], TextSendMessage(final_result))
+    Users_data = np.load("Database.npy")
+    for i in range(len(Users_data)):
+        try:
+            for j in range(len(report)):
+                if Users_data[i][1] in report[j][1]:
+                    line_bot_api.push_message(Users_data[i][0], TextSendMessage("Table_"+str(report[j][0])+"目前牌路為"+report[j][1]+",符合您設定的牌路"+Users_data[i][1]))
+        except:
+            excc = ""
     
 
 
@@ -180,7 +192,7 @@ help_strings += "\n\nPs1. 若未設定套路將採預設套路「莊閒莊閒」
 help_strings += "\n\nPs2. 若您想取消報牌，請輸入「取消」。"
 strategy_dic = {'閒':'C', '莊':'H', '和':'P'}
 #Starting sending messages 
-#set_interval(sendmeg, 10)
+set_interval(sendmeg, 15)
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -211,7 +223,7 @@ def handle_message(event):
             line_bot_api.reply_message(event.reply_token,TextSendMessage("重複註冊！"))
         else:
             print(event.source.user_id)
-            Users_data = np.append(Users_data, [[strange_id, ""]], axis=0)
+            Users_data = np.append(Users_data, [[strange_id, "HCHC"]], axis=0)
             np.save("Database.npy", Users_data)
             line_bot_api.reply_message(event.reply_token,TextSendMessage("註冊成功！"))
 
