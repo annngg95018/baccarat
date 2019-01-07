@@ -7,7 +7,9 @@ from linebot.exceptions import (
     InvalidSignatureError
 )
 from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,
+    MessageEvent, TextMessage, TextSendMessage, TemplateSendMessage,ButtonsTemplate,PostbackTemplateAction, 
+    URITemplateAction, MessageTemplateAction, ConfirmTemplate, PostbackAction, MessageAction,
+    PostbackEvent, Postback, CarouselColumn, CarouselTemplate
 )
 
 import numpy as np
@@ -17,6 +19,7 @@ import time
 
 import threading
 
+from pyautogui import press, typewrite, hotkey
 
 import cv2
 import numpy as np
@@ -24,6 +27,9 @@ from matplotlib import pyplot as plt
 
 #Image detection region 
 tem = ['Peace.png', 'Home.png', 'Client.png']
+strategy_dic = {'閒':'閒', '莊':'莊', '和':'和'}
+
+strategy_dicR = {'C':'閒', 'H':'莊', 'P':'和'}
 
 Users_id = []
 
@@ -104,75 +110,129 @@ def set_interval(func, sec):
     t.start()
     return t
 
+##################### Setting parameters 
+# Mac parameters
+#s_x = 480
+#s_y = 360
+#first_x = 170
+#first_y = 395
+#pos = [(first_x, first_y), (first_x, first_y+320), (first_x+1070, first_y-320),(first_x+1070, first_y), (first_x+1070, first_y+320)]
+#ww = 315
+#hh = 188
+#printscreen =  np.array(ImageGrab.grab(bbox=(s_x,s_y,2600,1340)))
+#cv2.imwrite('capture.png',cv2.cvtColor(printscreen, cv2.COLOR_BGR2RGB))
+
+# Windows parameters
+first_x = 427
+first_y = 431
+pos = [(first_x, first_y), (first_x, first_y+216), (first_x+722, first_y-216),(first_x+722, first_y), (first_x+722, first_y+216), (first_x, first_y+216+216), (first_x+722, first_y+216+216)]
+table_name = ['聚寶廳 LB002', '聚寶廳 LB004', '聚寶廳 LB001', '聚寶廳 LB003', '聚寶廳 LB005', '聚龍廳 B002', '聚龍廳 B004', '聚龍廳 B001', '聚龍廳 B003', '聚龍廳 B005', '聚龍廳 B006', '聚龍廳 B007']
+ww = 212
+hh = 126
+s_x = 310
+s_y = 180
+
 # Sending Info.
 def sendmeg():
-    s_x = 480
-    s_y = 360
-    printscreen =  np.array(ImageGrab.grab(bbox=(s_x,s_y,2600,1340)))
-    #cv2.imwrite('capture.png',cv2.cvtColor(printscreen, cv2.COLOR_BGR2RGB))
-    print('cap')
 
+    #cap first image
+    printscreen = np.array(ImageGrab.grab()) 
+    cv2.imwrite('capture1.png',cv2.cvtColor(printscreen, cv2.COLOR_BGR2RGB))
+    print('cap1')
 
-    img_rgb = cv2.imread('capture.png')
-    first_x = 170
-    first_y = 395
+    #using hotkey control the calibet change to second page
+    hotkey('ctrl', 'tab')
+    
+    #cap second image
+    printscreen = np.array(ImageGrab.grab()) 
+    cv2.imwrite('capture2.png',cv2.cvtColor(printscreen, cv2.COLOR_BGR2RGB))
+    print('cap2')
+    
+    #using hotkey control the calibet Return to first page
+    hotkey('ctrl', 'tab')
 
-
-
-    pos = [(first_x, first_y), (first_x, first_y+320), (first_x+1070, first_y-320),(first_x+1070, first_y), (first_x+1070, first_y+320)]
-    ww = 315
-    hh = 188
+    img_rgb1 = cv2.imread('capture1.png')
+    img_rgb2 = cv2.imread('capture2.png')
+    img_rgbs = [img_rgb1, img_rgb2]
     final_result = ""
-    table = 1
+    table = 0
+    img_control = 0
     report = []
-    for xx, yy in pos:
-        img_sub = img_rgb[int(yy-10):int(yy+hh+10), int(xx-5):int(xx+ww+5)]
-        game_sort = []
+    #foreach cap img
+    for img_rgb in img_rgbs:
+        #foreach position
+        for xx, yy in pos:
+            if img_control == 0 and table >4:
+                break
+            img_sub = img_rgb[int(yy-10):int(yy+hh+10), int(xx-5):int(xx+ww+5)]
+            game_sort = []
 
-        for t in tem:
+            for t in tem:
 
-            #col = (component(),component(),component())
-            template = cv2.imread(t)
-            template = cv2.resize(template, (18,18))
-            w, h = template.shape[0:2]
+                #col = (component(),component(),component())
+                template = cv2.imread(t)
 
-            res = cv2.matchTemplate(img_sub,template,cv2.TM_CCOEFF_NORMED)
-            threshold = 0.55
-            loc = np.where( res >= threshold)
+                # Mac parameters
+                #template = cv2.resize(template, (18,18))
+                #w, h = template.shape[0:2]
+                #res = cv2.matchTemplate(img_sub,template,cv2.TM_CCOEFF_NORMED)
+                #threshold = 0.55
+                
+                # Windows parameters
+                template = cv2.resize(template, (13,13))
+                w, h = template.shape[0:2]
+                res = cv2.matchTemplate(img_sub,template,cv2.TM_CCOEFF_NORMED)
+                threshold = 0.55
+                loc = np.where( res >= threshold)
 
-            boundingbox = []
-            for pt in zip(*loc[::-1]):
-                boundingbox.append([pt[0],pt[1], pt[0]+w, pt[1]+h])
-            # perform non-maximum suppression on the bounding boxes
-            loc = non_max_suppression_slow(np.array(boundingbox), 0.5)
-            for pt in loc:
+                boundingbox = []
+                for pt in zip(*loc[::-1]):
+                    boundingbox.append([pt[0],pt[1], pt[0]+w, pt[1]+h])
+                # perform non-maximum suppression on the bounding boxes
+                loc = non_max_suppression_slow(np.array(boundingbox), 0.5)
+                for pt in loc:
 
-                #cv2.rectangle(img_sub, (pt[0],pt[1]), (pt[2], pt[3]), col, 1)
-                game_sort.append([t[0], int(int(pt[0])/12), int(int(pt[1])/12)])
-        game_sort = sorted(game_sort, key = lambda game_sort: (game_sort[1], game_sort[2]))
-        game_sort.reverse()
-        print(len(game_sort))
-        table_info = ""
-        final_result += "table"+str(table)+"="
-        if len(game_sort) > 4:
-            for iii in range(5):
-                final_result += game_sort[iii][0]+":"
-                table_info += game_sort[iii][0]
-        
-        report.append([table, table_info[::-1]])
-        final_result += "\n"
-        final_result += "\n"
-        table += 1
+                    #cv2.rectangle(img_sub, (pt[0],pt[1]), (pt[2], pt[3]), col, 1)
+                    game_sort.append([t[0], int(int(pt[0])/12), int(int(pt[1])/12)])
+            game_sort = sorted(game_sort, key = lambda game_sort: (game_sort[1], game_sort[2]))
+            game_sort.reverse()
+            print(len(game_sort))
+            table_info = ""
+            if len(game_sort) > 0:
+                for iii in range(len(game_sort)):
+                    table_info += strategy_dicR[game_sort[iii][0]]
+            
+            report.append([table_name[table], table_info[::-1]])
+            table += 1
+
+        img_control += 1
     print('---------------------------------') 
-    print(report)
 
     #send message
     Users_data = np.load("Database.npy")
     for i in range(len(Users_data)):
         try:
-            for j in range(len(report)):
-                if Users_data[i][1] in report[j][1]:
-                    line_bot_api.push_message(Users_data[i][0], TextSendMessage("Table_"+str(report[j][0])+"目前牌路為"+report[j][1]+",符合您設定的牌路"+Users_data[i][1]))
+            url_or_not = False
+            for k in range(5):
+                message_ornot = False
+                for j in range(len(report)):
+                    if Users_data[i][k+1] in report[j][1][len(Users_data[i][k+1])*-1:]:
+                        if message_ornot == False and url_or_not == False:
+                            line_bot_api.push_message(Users_data[i][0], TextSendMessage("-------------------------------"))
+                        if message_ornot == False:
+                            line_bot_api.push_message(Users_data[i][0], TextSendMessage("--套路 "+str(k+1)+" 符合通知--"))
+                        combinemessage = "「"+str(report[j][0])+"」\n"
+                        combinemessage += "目前牌路為「"+report[j][1][-8:]+"」\n"
+                        combinemessage += "符合您設定的牌路「"+Users_data[i][k+1]+"」"
+                        line_bot_api.push_message(Users_data[i][0], TextSendMessage(combinemessage))
+                        message_ornot = True
+                        url_or_not = True
+            if url_or_not:
+                
+                line_bot_api.push_message(Users_data[i][0], TextSendMessage("--快速連結--"))
+                line_bot_api.push_message(Users_data[i][0], TextSendMessage("https://0857.win7889.net/"))
+                
+
         except:
             excc = ""
     
@@ -185,14 +245,14 @@ line_bot_api = LineBotApi('+Jgyg3wv6IdzR4KAUz9rIY81BkJV9oTBfOlZ9aYDpsNSUO7MjK9ez
 handler = WebhookHandler('e932e9253cab105336c606bf6f9fa7f6')
 my_id = "Ud3635ab30831e9f1ca5bef2d4a1e4c54"
 
-help_strings = "歡迎使用莫蒂百家樂，跟著以下步驟執行即可開啟報牌系統："
-help_strings += "\n\n1. 輸入「註冊」，完成註冊動作，並可開始報牌。"
-help_strings += "\n\n2. 輸入「套路=莊閒」，即可完成自訂套路設定動作，範例：「套路=莊閒莊閒」。（可重新設定）"
-help_strings += "\n\nPs1. 若未設定套路將採預設套路「莊閒莊閒」回報。"
-help_strings += "\n\nPs2. 若您想取消報牌，請輸入「取消」。"
-strategy_dic = {'閒':'C', '莊':'H', '和':'P'}
+help_strings = "請跟著以下步驟設定套路："
+help_strings += "\n\n1. 輸入「套路1=莊閒和」，完成第一組套路設定，範例：「套路1=莊閒莊和」。（可重新設定）"
+help_strings += "\n\n2. 輸入「套路2=莊閒和」，完成第二組套路設定，範例：「套路2=莊莊閒」。（可重新設定）"
+help_strings += "\n\n   設定多組套路以此類推......."
+help_strings += "\n\nPs1. 每組帳號總共五組套路可設定。"
+help_strings += "\n\nPs2. 輸入「刪除套路N」，即可刪除第N組套路，範例：「刪除套路2」。"
 #Starting sending messages 
-set_interval(sendmeg, 15)
+set_interval(sendmeg, 20)
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -212,10 +272,11 @@ def callback():
 
     return 'OK'
 
+@handler.add(PostbackEvent)
+def handle_postback(event):
 
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
-    if event.message.text == "註冊":
+    
+    if event.postback.data == "註冊":
         strange_id = event.source.user_id
         Users_data = np.load("Database.npy")
         if any (strange_id in s[0] for s in Users_data):
@@ -223,12 +284,89 @@ def handle_message(event):
             line_bot_api.reply_message(event.reply_token,TextSendMessage("重複註冊！"))
         else:
             print(event.source.user_id)
-            Users_data = np.append(Users_data, [[strange_id, "HCHC"]], axis=0)
+            Users_data = np.append(Users_data, [[strange_id, "無", "無", "無", "無", "無"]], axis=0)
             np.save("Database.npy", Users_data)
             line_bot_api.reply_message(event.reply_token,TextSendMessage("註冊成功！"))
 
+    elif event.postback.data == '1':
+        strange_id = event.source.user_id
+        Users_data = np.load("Database.npy")
+        del_i = 0
+        if any (strange_id in s[0] for s in Users_data):
+            for i in range(len(Users_data)):
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text='停止取消動作'))
+        else:
+            print("weird guy")
+            line_bot_api.reply_message(event.reply_token,TextSendMessage("您尚未註冊！"))
+
     
-    elif "套路=" in event.message.text or "套路＝" in event.message.text:
+    elif event.postback.data == "DeleteConfirm":
+        confirm_template_message = TemplateSendMessage(
+            alt_text='Confirm template',
+            template=ConfirmTemplate(
+                text='確定要取消報牌嗎?',
+                actions=[
+                    PostbackAction(
+                        label='是',
+                        data='取消'
+                    ),
+                    
+                    PostbackAction(
+                        label='否',
+                        data='1'
+                    )
+                ]
+            )
+        )
+        line_bot_api.reply_message(event.reply_token, confirm_template_message)
+
+    elif event.postback.data == "取消":
+        strange_id = event.source.user_id
+        Users_data = np.load("Database.npy")
+        del_i = 0
+        if any (strange_id in s[0] for s in Users_data):
+            for i in range(len(Users_data)):
+                if strange_id in Users_data[i][0]:
+                    del_i = i
+                    break
+            if del_i != 0:
+                Users_data = np.delete(Users_data, del_i, 0)
+                np.save("Database.npy", Users_data)
+                print("delete user")
+                line_bot_api.reply_message(event.reply_token,TextSendMessage("報牌已取消！"))
+        else:
+            print("weird guy")
+            line_bot_api.reply_message(event.reply_token,TextSendMessage("您尚未註冊！"))
+
+    
+    elif event.postback.data == "使用教學":
+        some_onesId = event.source.user_id
+        line_bot_api.push_message(some_onesId,TextSendMessage(help_strings))
+
+    elif  event.postback.data == "套路清單":
+        strange_id = event.source.user_id
+        
+        Users_data = np.load("Database.npy")
+        
+        if any (strange_id in s[0] for s in Users_data):
+            for i in range(len(Users_data)):
+                if strange_id in Users_data[i][0]:
+                    list_strategys = "您的套路清單："
+                    for j in range(len(Users_data[i])):
+                        if j != 0:
+                            list_strategys += "\n\n套路"+str(j)+" = "+Users_data[i][j]
+                    line_bot_api.reply_message(event.reply_token,TextSendMessage(list_strategys))
+
+        else:
+            print(event.source.user_id)
+            line_bot_api.reply_message(event.reply_token,TextSendMessage("您尚未註冊！"))
+
+        
+
+@handler.add(MessageEvent, message=TextMessage)
+def handle_message(event):
+    
+    if "套路" in event.message.text and "=" in event.message.text or "套路" in event.message.text and "＝" in event.message.text:
         strange_id = event.source.user_id
         strategy = ""
         try:
@@ -249,37 +387,90 @@ def handle_message(event):
 
                         for key in strategy:
                             cus_strategy += strategy_dic[key]
-                        Users_data[i][1] =  cus_strategy
+                        Users_data[i][int(event.message.text[2])] =  cus_strategy
                         line_bot_api.reply_message(event.reply_token,TextSendMessage("套路設定成功！"))
             except:
                 some_onesId = event.source.user_id
-                line_bot_api.push_message(some_onesId,TextSendMessage("請檢查是否有錯字，範例：「套路=莊閒莊閒」。"))
+                line_bot_api.push_message(some_onesId,TextSendMessage("請檢查是否有錯字，範例：「套路1=莊閒莊閒」。"))
 
         else:
             print(event.source.user_id)
             line_bot_api.reply_message(event.reply_token,TextSendMessage("欲設定請先註冊！"))
         np.save("Database.npy", Users_data)
 
-    elif event.message.text == "取消":
+    
+
+    elif "刪除套路" in event.message.text:
         strange_id = event.source.user_id
-        Users_data = np.load("Database.npy")
-        del_i = 0
-        if any (strange_id in s[0] for s in Users_data):
-            for i in range(len(Users_data)):
-                if strange_id in Users_data[i][0]:
-                    del_i = i
-                    break
-            if del_i != 0:
-                Users_data = np.delete(Users_data, del_i, 0)
-                np.save("Database.npy", Users_data)
-                print("delet user")
-                line_bot_api.reply_message(event.reply_token,TextSendMessage("報牌已取消！"))
-        else:
-            print("weird guy")
-            line_bot_api.reply_message(event.reply_token,TextSendMessage("您尚未註冊！"))
+        strategy = ""
+        try:
+        
+            int(event.message.text[4])
+            Users_data = np.load("Database.npy")
+        
+            if any (strange_id in s[0] for s in Users_data):
+                for i in range(len(Users_data)):
+                    if strange_id in Users_data[i][0]:
+                        Users_data[i][int(event.message.text[4])] =  "無"
+                        line_bot_api.reply_message(event.reply_token,TextSendMessage("套路"+event.message.text[4]+"已刪除！"))
+            else:
+                print(event.source.user_id)
+                line_bot_api.reply_message(event.reply_token,TextSendMessage("欲設定請先註冊！"))
+            np.save("Database.npy", Users_data)
+        
+        except:
+        
+            print('delete_type_fail')
+            line_bot_api.reply_message(event.reply_token,TextSendMessage("請檢查是否有錯字，範例：「刪除套路1」。"))
+
+        
+        
+
+    
+
+
+    
     else:
-        some_onesId = event.source.user_id
-        line_bot_api.push_message(some_onesId,TextSendMessage(help_strings))
+        message = TemplateSendMessage(
+        alt_text='Carousel template',
+        template=CarouselTemplate(
+            columns=[
+                CarouselColumn(
+                    thumbnail_image_url='https://www.ultraegaming.com/wp-content/uploads/2017/10/%E7%99%BE%E5%AE%B6%E6%A8%82-1-2.jpg',
+                    title='莫地百家樂',
+                    text='歡迎使用本系統，請跟隨指示操作。',
+                    actions=[
+                        PostbackAction(
+                            label='註冊會員',
+                            data='註冊'
+                        ),
+                        PostbackAction(
+                            label='取消報牌',
+                            data='DeleteConfirm'
+                        )
+                    ]
+                ),
+                CarouselColumn(
+                    thumbnail_image_url='https://www.triplecrowncasinos.com/wp-content/uploads/2016/07/casinos-in-colorado.jpg',
+                    title='您的套路',
+                    text='您可以自訂套路，並且可設定最多五組。',
+                    actions=[
+                        
+                        PostbackAction(
+                            label='套路清單',
+                            data='套路清單'
+                        ),
+                        PostbackTemplateAction(
+                            label='套路設定教學',
+                            data='使用教學'
+                        )
+                    ]
+                )
+            ]
+        )
+        )
+        
+        line_bot_api.reply_message(event.reply_token, message)
 
 
 
