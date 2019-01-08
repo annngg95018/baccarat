@@ -210,7 +210,7 @@ def sendmeg():
 
     #send message
     Users_data = np.load("Database.npy")
-    for i in range(len(Users_data)):
+    for i in range(1, len(Users_data)):
         if Users_data[i][6] != "" and Users_data[i][7] == 1:
             try:
                 url_or_not = False
