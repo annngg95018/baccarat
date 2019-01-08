@@ -281,8 +281,14 @@ def handle_postback(event):
         strange_id = event.source.user_id
         Users_data = np.load("Database.npy")
         if any (strange_id in s[0] for s in Users_data):
-            print("already register")
-            line_bot_api.reply_message(event.reply_token,TextSendMessage("重複註冊！"))
+
+            if Users_data[i][6] != "":
+                print("already register")
+                line_bot_api.reply_message(event.reply_token,TextSendMessage("重複註冊！"))
+            else:
+                print("not support lineID")
+                line_bot_api.reply_message(event.reply_token,TextSendMessage("尚未提供LineID，請輸入您的LineID，格式「ID=xxxxxx」。\n\n若未正確設定LineID將無法使用報牌系統。！"))
+
         else:
             print(event.source.user_id)
             Users_data = np.append(Users_data, [[strange_id, "無", "無", "無", "無", "無", "", 1]], axis=0)
@@ -313,7 +319,7 @@ def handle_postback(event):
             confirm_template_message = TemplateSendMessage(
                 alt_text='Confirm template',
                 template=ConfirmTemplate(
-                    text='確定要取消報牌嗎?',
+                    text='報牌通知設定',
                     actions=[
                         PostbackAction(
                             label='開啟通知',
@@ -351,6 +357,7 @@ def handle_postback(event):
         line_bot_api.push_message(some_onesId,TextSendMessage(help_strings))
 
     elif  event.postback.data == "套路清單":
+        
         strange_id = event.source.user_id
         
         Users_data = np.load("Database.npy")
@@ -358,11 +365,16 @@ def handle_postback(event):
         if any (strange_id in s[0] for s in Users_data):
             for i in range(len(Users_data)):
                 if strange_id in Users_data[i][0]:
-                    list_strategys = "您的套路清單："
-                    for j in range(6):
-                        if j != 0:
-                            list_strategys += "\n\n套路"+str(j)+" = "+Users_data[i][j]
-                    line_bot_api.reply_message(event.reply_token,TextSendMessage(list_strategys))
+                    if Users_data[i][6] != "":
+                        list_strategys = "您的套路清單："
+                        for j in range(6):
+                            if j != 0:
+                                list_strategys += "\n\n套路"+str(j)+" = "+Users_data[i][j]
+                        line_bot_api.reply_message(event.reply_token,TextSendMessage(list_strategys))
+                    else:
+                        print("not support lineID")
+                        line_bot_api.reply_message(event.reply_token,TextSendMessage("尚未提供LineID，請輸入您的LineID，格式「ID=xxxxxx」。\n\n若未正確設定LineID將無法使用報牌系統。！"))
+
 
         else:
             print(event.source.user_id)
