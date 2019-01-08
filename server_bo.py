@@ -359,7 +359,7 @@ def handle_postback(event):
             for i in range(len(Users_data)):
                 if strange_id in Users_data[i][0]:
                     list_strategys = "您的套路清單："
-                    for j in range(len(Users_data[i])):
+                    for j in range(6):
                         if j != 0:
                             list_strategys += "\n\n套路"+str(j)+" = "+Users_data[i][j]
                     line_bot_api.reply_message(event.reply_token,TextSendMessage(list_strategys))
