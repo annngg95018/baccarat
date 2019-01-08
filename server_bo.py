@@ -210,32 +210,33 @@ def sendmeg():
 
     #send message
     Users_data = np.load("Database.npy")
-    for i in range(1, len(Users_data)):
-        if Users_data[i][6] != "" and Users_data[i][7] == 1:
-            try:
-                url_or_not = False
-                for k in range(5):
-                    message_ornot = False
-                    for j in range(len(report)):
-                        if Users_data[i][k+1] in report[j][1][len(Users_data[i][k+1])*-1:]:
-                            if message_ornot == False and url_or_not == False:
-                                line_bot_api.push_message(Users_data[i][0], TextSendMessage("-------------------------------"))
-                            if message_ornot == False:
-                                line_bot_api.push_message(Users_data[i][0], TextSendMessage("--套路 "+str(k+1)+" 符合通知--"))
-                            combinemessage = "「"+str(report[j][0])+"」\n"
-                            combinemessage += "目前牌路為「"+report[j][1][-8:]+"」\n"
-                            combinemessage += "符合您設定的牌路「"+Users_data[i][k+1]+"」"
-                            line_bot_api.push_message(Users_data[i][0], TextSendMessage(combinemessage))
-                            message_ornot = True
-                            url_or_not = True
-                if url_or_not:
-                    
-                    line_bot_api.push_message(Users_data[i][0], TextSendMessage("--快速連結--"))
-                    line_bot_api.push_message(Users_data[i][0], TextSendMessage("https://www.win7889.net/"))
-                    
+    for i in range(len(Users_data)):
+        if i > 0:
+            if Users_data[i][6] != "" and Users_data[i][7] == 1:
+                try:
+                    url_or_not = False
+                    for k in range(5):
+                        message_ornot = False
+                        for j in range(len(report)):
+                            if Users_data[i][k+1] in report[j][1][len(Users_data[i][k+1])*-1:]:
+                                if message_ornot == False and url_or_not == False:
+                                    line_bot_api.push_message(Users_data[i][0], TextSendMessage("-------------------------------"))
+                                if message_ornot == False:
+                                    line_bot_api.push_message(Users_data[i][0], TextSendMessage("--套路 "+str(k+1)+" 符合通知--"))
+                                combinemessage = "「"+str(report[j][0])+"」\n"
+                                combinemessage += "目前牌路為「"+report[j][1][-8:]+"」\n"
+                                combinemessage += "符合您設定的牌路「"+Users_data[i][k+1]+"」"
+                                line_bot_api.push_message(Users_data[i][0], TextSendMessage(combinemessage))
+                                message_ornot = True
+                                url_or_not = True
+                    if url_or_not:
+                        
+                        line_bot_api.push_message(Users_data[i][0], TextSendMessage("--快速連結--"))
+                        line_bot_api.push_message(Users_data[i][0], TextSendMessage("https://www.win7889.net/"))
+                        
 
-            except:
-                excc = ""
+                except:
+                    excc = ""
     
 
 
@@ -282,7 +283,7 @@ def handle_postback(event):
         Users_data = np.load("Database.npy")
         if any (strange_id in s[0] for s in Users_data):
             for i in range(len(Users_data)):
-                if i >0:
+                if i > 0:
 
                     if Users_data[i][6] != "":
                         print("already register")
