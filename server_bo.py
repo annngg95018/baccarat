@@ -211,30 +211,31 @@ def sendmeg():
     #send message
     Users_data = np.load("Database.npy")
     for i in range(len(Users_data)):
-        try:
-            url_or_not = False
-            for k in range(5):
-                message_ornot = False
-                for j in range(len(report)):
-                    if Users_data[i][k+1] in report[j][1][len(Users_data[i][k+1])*-1:]:
-                        if message_ornot == False and url_or_not == False:
-                            line_bot_api.push_message(Users_data[i][0], TextSendMessage("-------------------------------"))
-                        if message_ornot == False:
-                            line_bot_api.push_message(Users_data[i][0], TextSendMessage("--套路 "+str(k+1)+" 符合通知--"))
-                        combinemessage = "「"+str(report[j][0])+"」\n"
-                        combinemessage += "目前牌路為「"+report[j][1][-8:]+"」\n"
-                        combinemessage += "符合您設定的牌路「"+Users_data[i][k+1]+"」"
-                        line_bot_api.push_message(Users_data[i][0], TextSendMessage(combinemessage))
-                        message_ornot = True
-                        url_or_not = True
-            if url_or_not:
-                
-                line_bot_api.push_message(Users_data[i][0], TextSendMessage("--快速連結--"))
-                line_bot_api.push_message(Users_data[i][0], TextSendMessage("https://0857.win7889.net/"))
-                
+        if Users_data[i][6] != "" and Users_data[i][7] == 1:
+            try:
+                url_or_not = False
+                for k in range(5):
+                    message_ornot = False
+                    for j in range(len(report)):
+                        if Users_data[i][k+1] in report[j][1][len(Users_data[i][k+1])*-1:]:
+                            if message_ornot == False and url_or_not == False:
+                                line_bot_api.push_message(Users_data[i][0], TextSendMessage("-------------------------------"))
+                            if message_ornot == False:
+                                line_bot_api.push_message(Users_data[i][0], TextSendMessage("--套路 "+str(k+1)+" 符合通知--"))
+                            combinemessage = "「"+str(report[j][0])+"」\n"
+                            combinemessage += "目前牌路為「"+report[j][1][-8:]+"」\n"
+                            combinemessage += "符合您設定的牌路「"+Users_data[i][k+1]+"」"
+                            line_bot_api.push_message(Users_data[i][0], TextSendMessage(combinemessage))
+                            message_ornot = True
+                            url_or_not = True
+                if url_or_not:
+                    
+                    line_bot_api.push_message(Users_data[i][0], TextSendMessage("--快速連結--"))
+                    line_bot_api.push_message(Users_data[i][0], TextSendMessage("https://www.win7889.net/"))
+                    
 
-        except:
-            excc = ""
+            except:
+                excc = ""
     
 
 
@@ -284,59 +285,65 @@ def handle_postback(event):
             line_bot_api.reply_message(event.reply_token,TextSendMessage("重複註冊！"))
         else:
             print(event.source.user_id)
-            Users_data = np.append(Users_data, [[strange_id, "無", "無", "無", "無", "無"]], axis=0)
+            Users_data = np.append(Users_data, [[strange_id, "無", "無", "無", "無", "無", "", 1]], axis=0)
             np.save("Database.npy", Users_data)
-            line_bot_api.reply_message(event.reply_token,TextSendMessage("註冊成功！"))
+            line_bot_api.reply_message(event.reply_token,TextSendMessage("請輸入您的LineID，格式「ID=xxxxxx」。\n\n若未正確設定LineID將無法使用報牌系統。"))
 
-    elif event.postback.data == '1':
+    elif event.postback.data == '開啟':
         strange_id = event.source.user_id
         Users_data = np.load("Database.npy")
-        del_i = 0
+        open_i = 0
+        for i in range(len(Users_data)):
+            if strange_id in Users_data[i][0]:
+                open_i = i
+                break
+        if open_i != 0:
+            Users_data[open_i][7] =  1
+            np.save("Database.npy", Users_data)
+            print("Close Notice")
+            line_bot_api.reply_message(event.reply_token,TextSendMessage("報牌通知開啟！"))
+
+    
+    elif event.postback.data == "Confirm":
+
+        strange_id = event.source.user_id
+        Users_data = np.load("Database.npy")
         if any (strange_id in s[0] for s in Users_data):
-            for i in range(len(Users_data)):
-                line_bot_api.reply_message(event.reply_token, TextSendMessage(text='停止取消動作'))
+                
+            confirm_template_message = TemplateSendMessage(
+                alt_text='Confirm template',
+                template=ConfirmTemplate(
+                    text='確定要取消報牌嗎?',
+                    actions=[
+                        PostbackAction(
+                            label='開啟通知',
+                            data='開啟'
+                        ),
+                        PostbackAction(
+                            label='取消通知',
+                            data='取消'
+                        )
+                    ]
+                )
+            )
+            line_bot_api.reply_message(event.reply_token, confirm_template_message)
         else:
             print("weird guy")
             line_bot_api.reply_message(event.reply_token,TextSendMessage("您尚未註冊！"))
-
-    
-    elif event.postback.data == "DeleteConfirm":
-        confirm_template_message = TemplateSendMessage(
-            alt_text='Confirm template',
-            template=ConfirmTemplate(
-                text='確定要取消報牌嗎?',
-                actions=[
-                    PostbackAction(
-                        label='是',
-                        data='取消'
-                    ),
-                    
-                    PostbackAction(
-                        label='否',
-                        data='1'
-                    )
-                ]
-            )
-        )
-        line_bot_api.reply_message(event.reply_token, confirm_template_message)
 
     elif event.postback.data == "取消":
         strange_id = event.source.user_id
         Users_data = np.load("Database.npy")
-        del_i = 0
-        if any (strange_id in s[0] for s in Users_data):
-            for i in range(len(Users_data)):
-                if strange_id in Users_data[i][0]:
-                    del_i = i
-                    break
-            if del_i != 0:
-                Users_data = np.delete(Users_data, del_i, 0)
-                np.save("Database.npy", Users_data)
-                print("delete user")
-                line_bot_api.reply_message(event.reply_token,TextSendMessage("報牌已取消！"))
-        else:
-            print("weird guy")
-            line_bot_api.reply_message(event.reply_token,TextSendMessage("您尚未註冊！"))
+        stop_i = 0
+        for i in range(len(Users_data)):
+            if strange_id in Users_data[i][0]:
+                stop_i = i
+                break
+        if stop_i != 0:
+            Users_data[stop_i][7] =  0
+            np.save("Database.npy", Users_data)
+            print("Close Notice")
+            line_bot_api.reply_message(event.reply_token,TextSendMessage("報牌通知關閉！"))
 
     
     elif event.postback.data == "使用教學":
@@ -424,7 +431,32 @@ def handle_message(event):
             line_bot_api.reply_message(event.reply_token,TextSendMessage("請檢查是否有錯字，範例：「刪除套路1」。"))
 
         
+    elif "ID" in event.message.text or "id" in event.message.text:
+        strange_id = event.source.user_id
+        Lineid = ""
+        try:
         
+            Lineid = event.message.text.split('＝')[1]
+        
+        except:
+        
+            Lineid = event.message.text.split('=')[1]
+
+        Users_data = np.load("Database.npy")
+        user_i = 0
+        if any (strange_id in s[0] for s in Users_data):
+            for i in range(len(Users_data)):
+                if strange_id in Users_data[i][0]:
+                    user_i = i
+                    break
+            if user_i != 0:
+                Users_data[user_i][6] =  Lineid
+                np.save("Database.npy", Users_data)
+                print("Add user line ID")
+                line_bot_api.reply_message(event.reply_token,TextSendMessage("註冊成功！"))
+        else:
+            print("weird guy")
+            line_bot_api.reply_message(event.reply_token,TextSendMessage("您尚未註冊！"))
 
     
 
@@ -445,8 +477,8 @@ def handle_message(event):
                             data='註冊'
                         ),
                         PostbackAction(
-                            label='取消報牌',
-                            data='DeleteConfirm'
+                            label='報牌通知設定',
+                            data='Confirm'
                         )
                     ]
                 ),
