@@ -283,14 +283,16 @@ def handle_postback(event):
         Users_data = np.load("Database.npy")
         if any (strange_id in s[0] for s in Users_data):
             for i in range(len(Users_data)):
-                if i > 0:
+                if strange_id in Users_data[i][0]:
 
                     if Users_data[i][6] != "":
                         print("already register")
                         line_bot_api.reply_message(event.reply_token,TextSendMessage("重複註冊！"))
+                        
                     else:
                         print("not support lineID")
                         line_bot_api.reply_message(event.reply_token,TextSendMessage("尚未提供LineID，請輸入您的LineID，格式「ID=xxxxxx」。\n\n若未正確設定LineID將無法使用報牌系統。！"))
+                    
 
         else:
             print(event.source.user_id)
