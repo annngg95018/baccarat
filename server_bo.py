@@ -314,6 +314,30 @@ def callback():
     except InvalidSignatureError:
         print("Handler2")
         # abort(400)
+    
+
+    # handle3 webhook body  
+    try:
+        handler3.handle(body, signature)
+    except InvalidSignatureError:
+        print("Handler3")
+        # abort(400)
+
+    
+    # handle4 webhook body  
+    try:
+        handler4.handle(body, signature)
+    except InvalidSignatureError:
+        print("Handler4")
+        # abort(400)
+
+    
+    # handle5 webhook body  
+    try:
+        handler5.handle(body, signature)
+    except InvalidSignatureError:
+        print("Handler5")
+        # abort(400)
 
     return 'OK'
 
