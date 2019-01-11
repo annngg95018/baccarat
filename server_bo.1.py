@@ -242,8 +242,8 @@ def sendmeg():
 app = Flask(__name__)
 
 line_bot_api = LineBotApi('bWwBmKcECNbWVh1qzRo2ITtlWX96LR/aIV+rN2iRzaNIb4Axdy2mravOnYg8QZXUyYw8a7epEmKMyW+7IlWaB5DUtHNMtqcnn1+Nniu/4e83ftYW/PnfOX2HE5N+PYowuGQX0CcNW04QGxHB5NbRWwdB04t89/1O/w1cDnyilFU=')
-handler = WebhookHandler('3ddb82d3b7648ae066ba8723fca37b04')
-my_id = "Ud3635ab30831e9f1ca5bef2d4a1e4c54"
+handler = WebhookHandler('29d785907d4c3537c1f3ab4c9d2680eb')
+my_id = "Ua994daaccf01ac3319e62211e3539004"
 
 help_strings = "請跟著以下步驟設定套路："
 help_strings += "\n\n1. 輸入「套路1=莊閒和」，完成第一組套路設定，範例：「套路1=莊閒莊和」。（可重新設定）"
@@ -280,63 +280,79 @@ def handle_postback(event):
         strange_id = event.source.user_id
         Users_data = np.load("Database.npy")
         if any (strange_id in s[0] for s in Users_data):
-            print("already register")
-            line_bot_api.reply_message(event.reply_token,TextSendMessage("重複註冊！"))
+            for i in range(len(Users_data)):
+                if strange_id in Users_data[i][0]:
+
+                    if Users_data[i][6] != "":
+                        print("already register")
+                        line_bot_api.reply_message(event.reply_token,TextSendMessage("重複註冊！"))
+                        
+                    else:
+                        print("not support lineID")
+                        line_bot_api.reply_message(event.reply_token,TextSendMessage("尚未提供LineID，請輸入您的LineID，格式「ID=xxxxxx」。\n\n若未正確設定LineID將無法使用報牌系統。！"))
+                    
+
         else:
             print(event.source.user_id)
-            Users_data = np.append(Users_data, [[strange_id, "無", "無", "無", "無", "無"]], axis=0)
+            Users_data = np.append(Users_data, [[strange_id, "無", "無", "無", "無", "無", "", 1]], axis=0)
             np.save("Database.npy", Users_data)
-            line_bot_api.reply_message(event.reply_token,TextSendMessage("註冊成功！"))
+            line_bot_api.reply_message(event.reply_token,TextSendMessage("請輸入您的LineID，格式「ID=xxxxxx」。\n\n若未正確設定LineID將無法使用報牌系統。"))
 
-    elif event.postback.data == '1':
+    elif event.postback.data == '開啟':
         strange_id = event.source.user_id
         Users_data = np.load("Database.npy")
-        del_i = 0
+        open_i = 0
+        for i in range(len(Users_data)):
+            if strange_id in Users_data[i][0]:
+                open_i = i
+                break
+        if open_i != 0:
+            Users_data[open_i][7] =  1
+            np.save("Database.npy", Users_data)
+            print("Close Notice")
+            line_bot_api.reply_message(event.reply_token,TextSendMessage("報牌通知開啟！"))
+
+    
+    elif event.postback.data == "Confirm":
+
+        strange_id = event.source.user_id
+        Users_data = np.load("Database.npy")
         if any (strange_id in s[0] for s in Users_data):
-            for i in range(len(Users_data)):
-                line_bot_api.reply_message(event.reply_token, TextSendMessage(text='停止取消動作'))
+                
+            confirm_template_message = TemplateSendMessage(
+                alt_text='Confirm template',
+                template=ConfirmTemplate(
+                    text='報牌通知設定',
+                    actions=[
+                        PostbackAction(
+                            label='開啟通知',
+                            data='開啟'
+                        ),
+                        PostbackAction(
+                            label='取消通知',
+                            data='取消'
+                        )
+                    ]
+                )
+            )
+            line_bot_api.reply_message(event.reply_token, confirm_template_message)
         else:
             print("weird guy")
             line_bot_api.reply_message(event.reply_token,TextSendMessage("您尚未註冊！"))
-
-    
-    elif event.postback.data == "DeleteConfirm":
-        confirm_template_message = TemplateSendMessage(
-            alt_text='Confirm template',
-            template=ConfirmTemplate(
-                text='確定要取消報牌嗎?',
-                actions=[
-                    PostbackAction(
-                        label='是',
-                        data='取消'
-                    ),
-                    
-                    PostbackAction(
-                        label='否',
-                        data='1'
-                    )
-                ]
-            )
-        )
-        line_bot_api.reply_message(event.reply_token, confirm_template_message)
 
     elif event.postback.data == "取消":
         strange_id = event.source.user_id
         Users_data = np.load("Database.npy")
-        del_i = 0
-        if any (strange_id in s[0] for s in Users_data):
-            for i in range(len(Users_data)):
-                if strange_id in Users_data[i][0]:
-                    del_i = i
-                    break
-            if del_i != 0:
-                Users_data = np.delete(Users_data, del_i, 0)
-                np.save("Database.npy", Users_data)
-                print("delete user")
-                line_bot_api.reply_message(event.reply_token,TextSendMessage("報牌已取消！"))
-        else:
-            print("weird guy")
-            line_bot_api.reply_message(event.reply_token,TextSendMessage("您尚未註冊！"))
+        stop_i = 0
+        for i in range(len(Users_data)):
+            if strange_id in Users_data[i][0]:
+                stop_i = i
+                break
+        if stop_i != 0:
+            Users_data[stop_i][7] =  0
+            np.save("Database.npy", Users_data)
+            print("Close Notice")
+            line_bot_api.reply_message(event.reply_token,TextSendMessage("報牌通知關閉！"))
 
     
     elif event.postback.data == "使用教學":
@@ -344,6 +360,7 @@ def handle_postback(event):
         line_bot_api.push_message(some_onesId,TextSendMessage(help_strings))
 
     elif  event.postback.data == "套路清單":
+        
         strange_id = event.source.user_id
         
         Users_data = np.load("Database.npy")
@@ -351,11 +368,16 @@ def handle_postback(event):
         if any (strange_id in s[0] for s in Users_data):
             for i in range(len(Users_data)):
                 if strange_id in Users_data[i][0]:
-                    list_strategys = "您的套路清單："
-                    for j in range(len(Users_data[i])):
-                        if j != 0:
-                            list_strategys += "\n\n套路"+str(j)+" = "+Users_data[i][j]
-                    line_bot_api.reply_message(event.reply_token,TextSendMessage(list_strategys))
+                    if Users_data[i][6] != "":
+                        list_strategys = "您的套路清單："
+                        for j in range(6):
+                            if j != 0:
+                                list_strategys += "\n\n套路"+str(j)+" = "+Users_data[i][j]
+                        line_bot_api.reply_message(event.reply_token,TextSendMessage(list_strategys))
+                    else:
+                        print("not support lineID")
+                        line_bot_api.reply_message(event.reply_token,TextSendMessage("尚未提供LineID，請輸入您的LineID，格式「ID=xxxxxx」。\n\n若未正確設定LineID將無法使用報牌系統。！"))
+
 
         else:
             print(event.source.user_id)
@@ -424,7 +446,32 @@ def handle_message(event):
             line_bot_api.reply_message(event.reply_token,TextSendMessage("請檢查是否有錯字，範例：「刪除套路1」。"))
 
         
+    elif "ID" in event.message.text or "id" in event.message.text:
+        strange_id = event.source.user_id
+        Lineid = ""
+        try:
         
+            Lineid = event.message.text.split('＝')[1]
+        
+        except:
+        
+            Lineid = event.message.text.split('=')[1]
+
+        Users_data = np.load("Database.npy")
+        user_i = 0
+        if any (strange_id in s[0] for s in Users_data):
+            for i in range(len(Users_data)):
+                if strange_id in Users_data[i][0]:
+                    user_i = i
+                    break
+            if user_i != 0:
+                Users_data[user_i][6] =  Lineid
+                np.save("Database.npy", Users_data)
+                print("Add user line ID")
+                line_bot_api.reply_message(event.reply_token,TextSendMessage("註冊成功！"))
+        else:
+            print("weird guy")
+            line_bot_api.reply_message(event.reply_token,TextSendMessage("您尚未註冊！"))
 
     
 
@@ -445,8 +492,8 @@ def handle_message(event):
                             data='註冊'
                         ),
                         PostbackAction(
-                            label='取消報牌',
-                            data='DeleteConfirm'
+                            label='報牌通知設定',
+                            data='Confirm'
                         )
                     ]
                 ),
@@ -475,4 +522,4 @@ def handle_message(event):
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=80)
